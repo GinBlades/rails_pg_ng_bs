@@ -93,7 +93,7 @@ We will add a mail constraint directly to the database
             users
         ADD CONSTRAINT
             email_must_be_company_email
-        CHECK ( email ~* '^[^@]+@example||.com' )
+        CHECK ( email ~* '[A-Za-z0-9._%-]+@example.com' )
         )
     end
 
@@ -339,9 +339,11 @@ these indexes on a migration.
     end
 
     def down
-        remove_index :customers, name: "customers_lower_last_name"
-        remove_index :customers, name: "customers_lower_first_name"
-        remove_index :customers, name: "customers_lower_email"
+        execute %(
+            DROP INDEX customers_lower_last_name;
+            DROP INDEX customers_lower_first_name;
+            DROP INDEX customers_lower_email;
+        )
     end
 
 The `varchar_pattern_ops` term is an **operator class**, which will allow Postgres to optimize for `like` searches. Run the `EXPLAIN ANALYZE` command in the dbconsole to see the difference. The `SeqScan` is gone and there are **index scans** that are able to skip some rows in the database.
@@ -583,4 +585,98 @@ We'll check this in our RSpec test
         end
     end
 
-Run the test with `rspec spec/models/user_spec.rb`
+Run the test with `rspec spec/models/user_spec.rb`. We can make the test a little cleaner with a custom matcher
+
+    # spec/support/violate_check_constraint_matcher.rb
+    RSpec::Matchers.define :violate_check_constraint do |constraint_name|
+        # Custom matchers don't support blocks by default
+        supports_block_expectations
+
+        # Match block should evaluate to true or false
+        match do |code_to_test|
+            begin
+                # Run the code
+                code_to_test.()
+                # return false if there was no error
+                false
+            rescue ActiveRecord::StatementInvalid => ex
+                ex.message =~ /#{constraint_name}/
+            end
+        end
+    end
+
+    # spec/models/user_spec.rb
+    ...
+    it "prevents invalid email addresses" do
+        expect {
+            user.update_attribute(:email, "foo@bar.com")
+        }.to violate_check_constraint(:email_must_be_company_email)
+    end
+
+Install phantomjs, I used npm
+
+    npm install -g phantomjs
+
+Install Poltergeist as an adapter between ruby and phantomjs. This will include capybara as a dependency.
+
+    group :development, :test do
+        ...
+        gem 'poltergeist'
+    end
+
+Add some changes to the `rails_helper` to work with these
+
+    ...
+    require 'rspec/rails'
+    require 'capybara/poltergeist'
+
+    Capybara.javascript_driver = :poltergeist
+    Capybara.default_driver = :poltergeist
+    ...
+
+To do integration tests, we have to do database loading outside of transactions, which is typically
+how rspec maintains the test setup. We'll add the `database_cleaner` gem to make it cleanable.
+
+    group :development, :test do
+        gem 'database_cleaner'
+    end
+
+In the rails helper we'll add code to clean up the database as needed.
+
+    config.use_transactional_fixtures = false
+    config.infer_spec_type_from_file_location!
+
+    config.before(:suite) do
+        DatabaseCleaner.clean_with(:truncation)
+    end
+
+    config.before(:each) do
+        DatabaseCleaner.strategy = :transaction
+    end
+
+    config.before(:each, type: :feature) do
+        DatabaseCleaner.strategy = :truncation
+    end
+
+    config.before(:each) do
+        DatabaseCleaner.start
+    end
+
+    config.after(:each) do
+        DatabaseCleaner.clean
+    end
+
+Then we can start our feature test
+
+    require "rails_helper"
+
+    feature "angular test" do
+        let(:email) { "bob@example.com" }
+        let(:password) { "password123" }
+
+        before do
+            User.create!(email: email,
+            password: password,
+            password_confirmation: password)
+        end
+    end
