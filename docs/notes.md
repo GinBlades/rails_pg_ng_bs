@@ -1,4 +1,4 @@
-# 1 - Setup Devise and Bootstrap
+## 1 - Setup Devise and Bootstrap
 
 Create the new application without turbolinks, spring, or test unit
 
@@ -71,3 +71,17 @@ source.
 Install the devise views
 
     bundle exec rails g devise:views
+
+Style them for bootstrap
+
+Update devise initializer for password length and restrict email to `example.com` email
+
+    # config/initializers/devise.rb
+    config.password_length = 10..128
+    config.email_regexp = /|A[^@]+@example\.com|z/
+
+## Chapter 2 - Secure Login Database with Postgres Constraints
+
+We will add a mail constraint directly to the database
+
+    b-rails g migration add-email-constraint-to-users
