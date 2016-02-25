@@ -13,4 +13,5 @@
 //= require jquery
 //= require jquery_ujs
 //= require angular
+//= require bind-polyfill
 //= require_tree .
