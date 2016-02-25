@@ -344,4 +344,50 @@ these indexes on a migration.
         remove_index :customers, name: "customers_lower_email"
     end
 
-The `varchar_pattern_ops` term is an **operator class**, which will allow Postgres to optimize for `like` searches. Run the `EXPLAIN ANALYZE` command in the dbconsole to see the difference.
+The `varchar_pattern_ops` term is an **operator class**, which will allow Postgres to optimize for `like` searches. Run the `EXPLAIN ANALYZE` command in the dbconsole to see the difference. The `SeqScan` is gone and there are **index scans** that are able to skip some rows in the database.
+
+## Chapter 4 - Styling Search Results
+
+Convert the table:
+
+  <ol class="list-group">
+    <% @customers.each do |customer| %>
+      <li class="list-group-item clearfix">
+        <h3 class="pull-right">
+          Joined <%= l customer.created_at.to_date %>
+        </h3>
+        <h2 class="h3">
+          <%= customer.first_name %> <% customer.last_name %>
+          <small><%= customer.username %></small>
+        </h2>
+        <h4><%= customer.email %></h4>
+      </li>
+    <% end %>
+  </ol>
+
+Add paging to the controller and view:
+
+    PAGE_SIZE = 10
+    def index
+        @page = (params[:page] || 0).to_i
+        ...
+            .offset(PAGE_SIZE * @page).limit(PAGE_SIZE)
+
+
+    # _pager.html
+    <nav>
+    <ul class="pager">
+    <li class="previous <%= page == 0 ? 'disabled' : '' %>">
+        <%= link_to_if page > 0, "&larr; Previous".html_safe,
+            customers_path(keywors: keywords, page: page - 1) %>
+    </li>
+    <li class="next">
+        <%= link_to "Next &rarr;".html_safe,
+            customers_path(keywords: keywords, page: page + 1) %>
+    </li>
+    </ul>
+    </nav>
+
+    # index.html
+    ...
+    <%= render "pager", { keywords: @keywords, page: @page } %>
