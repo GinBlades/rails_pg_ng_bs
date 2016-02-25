@@ -513,3 +513,12 @@ Modify the search to use "typeahead" searching.
         }
         ...
     }
+
+## Chapter 6 - Testing
+
+Install rspec into the development/test groups
+
+    group :development, :test do
+        gem "rspec-rails"
+    end
+
