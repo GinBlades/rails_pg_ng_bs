@@ -391,3 +391,37 @@ Add paging to the controller and view:
     # index.html
     ...
     <%= render "pager", { keywords: @keywords, page: @page } %>
+
+## Chapter 5 -Adding Angular
+
+Add the requirement to your Bowerfile. Use `resolution` to automatically pick angular if there is a dependency issue.
+
+    asset "angular", "~> 1.5"
+    resolution "angular", "1.5"
+
+    bundle exec rake bower:install
+
+Add angular to your `application.js` manifest
+
+    //= require angular
+
+Remove the rails heleprs from your view and add a controller
+
+    <article ng-app="customers" ng-controller="CustomerSearchController">
+    ...
+    <section class="search-form">
+    <form>
+        <div class="input-group input-group-lg">
+        <label class="sr-only" for="keywords">Keywords</label>
+        <input class="form-control input-lg" type="text"
+            placeholder="First Name, Last Name, or Email Address" ng-model="keywords">
+        <span class="input-group-btn">
+            <button class="btn btn-primary btn-lg" ng-click="search(keywords)">Find Customers</button>
+        </span>
+        </div>
+    </form>
+    </section>
+    ...
+    </article>
+
+
