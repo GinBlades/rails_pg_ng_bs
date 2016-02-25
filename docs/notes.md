@@ -85,3 +85,30 @@ Update devise initializer for password length and restrict email to `example.com
 We will add a mail constraint directly to the database
 
     b-rails g migration add-email-constraint-to-users
+    
+    # migration
+    def up
+        execute %(
+        ALTER TABLE
+            users
+        ADD CONSTRAINT
+            email_must_be_company_email
+        CHECK ( email ~* '^[^@]+@example||.com' )
+        )
+    end
+
+    def down
+        execute %(
+        ALTER TABLE
+            users
+        DROP CONSTRAINT
+            email_must_be_company_email
+        )
+    end
+
+Because we're using this constraint, the rails schema wont pick it up. Convert the schema to sql
+
+    # config/application.rb
+    config.active_record.schema_format = :sql
+
+## Chapter 3 - Fast Queries with Advanced Postgres Indexes
