@@ -421,7 +421,95 @@ Remove the rails heleprs from your view and add a controller
         </div>
     </form>
     </section>
+    <section class="search-results">
+        <header>
+            <h1 class="h3">Results</h1>
+        </header>
+        <ol class="list-group">
+            <li class="list-group-item clearfix" ng-repeat="customer in customers">
+                <h3 class="pull-right">
+                <small class="text-uppercase">Joined </small> {{ customer.created_at | date }}
+                </h3>
+                <h2 class="h3">
+                {{ customer.first_name }} {{ customer.last_name }}
+                <small>{{ customer.username }}</small>
+                </h2>
+                <h4>{{ customer.email }}</h4>
+            </li>
+        </ol>
     ...
     </article>
 
+Add json handling in the controller
 
+    respond_to do |format|
+      format.html {}
+      format.json { render json: @customers }
+    end
+
+Add `$http` to the angular controller.
+
+    var CustomerSearchController = function($scope, $http) {
+        $scope.search = function(searchTerm) {
+            $http.get("/customers.json", {
+                "params": { "keywords": searchTerm }
+            }).then(function(response) {
+                $scope.customers = response.data;
+            }, function(response) {
+                alert("There was a problem: " + response.status);
+            });
+        }
+    }
+
+Reimplementing pagination will require changing the views and angular controller
+
+    # _pager.html
+    <nav>
+        <ul class="pager">
+            <li class="previous">
+                <a href="" ng-click="previousPage()">&larr; Previous</a>
+            </li>
+            <li class="next">
+                <a href="" ng-click="nextPage()">Next &rarr;</a>
+            </li>
+        </ul>
+    </nav>
+
+    # customers_app.js
+
+    var page = 0;
+
+    $scope.customers = [];
+    $scope.search = function(searchTerm) {
+        $http.get("/customers.json", {
+            "params": { "keywords": searchTerm, "page": page }
+            ...
+
+    $scope.previousPage = function() {
+        if (page > 0) {
+            page = page - 1;
+            $scope.search($scope.keywords);
+        }
+    }
+
+    $scope.nextPage = function() {
+        page = page + 1;
+        $scope.search($scope.keywords);
+    }
+
+Modify the search to use "typeahead" searching.
+
+    # index.html
+    <form>
+        <label class="sr-only" for="keywords">Keywords</label>
+        <input class="form-control input-lg" type="text"
+        placeholder="First Name, Last Name, or Email Address" ng-change="search(keywords)" ng-model="keywords">
+    </form>
+
+    # customers_app.js
+    $scope.search = function(searchTerm) {
+        if (searchTerm.length < 3) {
+            return;
+        }
+        ...
+    }

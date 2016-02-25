@@ -4,14 +4,9 @@
 </header>
 <section class="search-form">
   <form>
-    <div class="input-group input-group-lg">
-      <label class="sr-only" for="keywords">Keywords</label>
-      <input class="form-control input-lg" type="text"
-        placeholder="First Name, Last Name, or Email Address" ng-model="keywords">
-      <span class="input-group-btn">
-        <button class="btn btn-primary btn-lg" ng-click="search(keywords)">Find Customers</button>
-    </span>
-    </div>
+    <label class="sr-only" for="keywords">Keywords</label>
+    <input class="form-control input-lg" type="text"
+      placeholder="First Name, Last Name, or Email Address" ng-change="search(keywords)" ng-model="keywords">
   </form>
   <h1 class="searchedFor" ng-if="searchedFor">
     <small>Searched for:</small> {{ searchedFor }}
@@ -24,7 +19,7 @@
   <ol class="list-group">
       <li class="list-group-item clearfix" ng-repeat="customer in customers">
         <h3 class="pull-right">
-          <small class="text-uppercase">Joined </small> {{ customer.created_at }}
+          <small class="text-uppercase">Joined </small> {{ customer.created_at | date }}
         </h3>
         <h2 class="h3">
           {{ customer.first_name }} {{ customer.last_name }}
