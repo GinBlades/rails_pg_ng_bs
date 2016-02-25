@@ -522,3 +522,65 @@ Install rspec into the development/test groups
         gem "rspec-rails"
     end
 
+    b-rails g rspec:install
+
+Uncomment and include some additional configuration
+
+    RSpec.configure do |config|
+    config.expect_with :rspec do |expectations|
+        expectations.include_chain_clauses_in_custom_matcher_descriptions = true
+        expectations.syntax = [:expect]
+    end
+
+    config.mock_with :rspec do |mocks|
+        mocks.verify_partial_doubles = true
+        mocks.verify_doubled_constant_names = true
+    end
+
+    config.filter_run :focus
+    config.run_all_when_everything_filtered = true
+
+    config.disable_monkey_patching!
+    config.expose_dsl_globally = true
+
+    if config.files_to_run.one?
+        config.default_formatter = 'doc'
+    end
+
+    config.profile_examples = 10
+
+    config.order = :random
+
+    Kernel.srand config.seed
+    end
+
+The `verify_doubled_constant_names` parameter will warn us if we mock undefined classes. The `expose_dsl_globally`
+option will let us use `describe` without the `RSpec` prefix.
+
+To test the database constraints, we need to force active record to generate bad data. `update_attribute` can be used
+to circumvent validation. You can see the type of errors produced in the console that we will use in the test
+
+    User.first.update_attribute(:email, "foo@somewhere.com")
+    # PG::CheckViolation: ERROR:
+    # ACtiveRecord::StatementInvalid: PG::CheckViolation: ERROR:
+
+We'll check this in our RSpec test
+
+    # spec/models/user_spec.rb
+    require 'rails_helper'
+    describe User do
+        describe "email" do
+            let(:user) {
+                User.create!(email: "foo@example.com",
+                            password: "qwertyuiop",
+                            passwordconfirmation: "qwertyuiop")
+            }
+            it "prevents invalid email addresses" do
+                expect {
+                    user.update_attribute(:email, "foo@bar.com")
+                }.to raise_error(ActiveRecord::StatementInvalid, /email_must_be_company_email/i)
+            end
+        end
+    end
+
+Run the test with `rspec spec/models/user_spec.rb`
